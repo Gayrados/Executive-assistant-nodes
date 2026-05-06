@@ -1,0 +1,422 @@
+{
+  "name": "Executive Calendar Command Center",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "manual_trigger_parent",
+      "name": "Manual Trigger - Start Command Center",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [200, 300]
+    },
+    {
+      "parameters": {
+        "content": "Executive Calendar Command Center\n\nParent orchestration workflow.\nRoutes WF-01 through WF-10, logs status after each major stage, stops on missing information, approval requirements, validation failures, or errors.",
+        "height": 220,
+        "width": 320,
+        "color": 4
+      },
+      "id": "sticky_parent",
+      "name": "Sticky Note - Parent Workflow",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "request_id", "value": "REQ-2026-05-11-001" },
+            { "name": "request_type", "value": "new" },
+            { "name": "request_source", "value": "email" },
+            { "name": "meeting_purpose", "value": "Intro call with Northshore Partners" },
+            { "name": "desired_outcome", "value": "" },
+            { "name": "meeting_type", "value": "external_intro" },
+            { "name": "meeting_format", "value": "video" },
+            { "name": "preferred_datetime", "value": "2026-05-11T13:00:00-07:00" },
+            { "name": "preferred_time_window", "value": "2026-05-11T13:00:00-07:00/2026-05-11T13:30:00-07:00" },
+            { "name": "deadline", "value": "2026-05-13T17:00:00-07:00" },
+            { "name": "time_zone", "value": "America/Los_Angeles" },
+            { "name": "agenda", "value": "" },
+            { "name": "prep_materials", "value": "" },
+            { "name": "location", "value": "" },
+            { "name": "video_link", "value": "" },
+            { "name": "dial_in_details", "value": "" },
+            { "name": "confidentiality_level", "value": "internal" },
+            { "name": "recurrence_required", "value": "false" },
+            { "name": "boss_required", "value": "true" },
+            { "name": "required_attendees_json", "value": "[\"Executive\",\"Northshore Partner Lead\"]" },
+            { "name": "optional_attendees_json", "value": "[]" },
+            { "name": "hold_owner", "value": "EA" },
+            { "name": "hold_expiry", "value": "2026-05-11T16:00:00-07:00" },
+            { "name": "workflow_status", "value": "PARENT_STARTED" },
+            { "name": "special_route", "value": "standard" }
+          ],
+          "number": [
+            { "name": "duration_minutes", "value": 30 }
+          ],
+          "boolean": [
+            { "name": "travel_required", "value": false },
+            { "name": "prep_required", "value": false },
+            { "name": "follow_up_expected", "value": true }
+          ]
+        }
+      },
+      "id": "set_parent_input",
+      "name": "Set - Example Request",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-01 Meeting Request Intake",
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "request_id": "={{$json.request_id}}",
+            "request_type": "={{$json.request_type}}",
+            "request_source": "={{$json.request_source}}",
+            "meeting_purpose": "={{$json.meeting_purpose}}",
+            "desired_outcome": "={{$json.desired_outcome}}",
+            "meeting_type": "={{$json.meeting_type}}",
+            "meeting_format": "={{$json.meeting_format}}",
+            "preferred_datetime": "={{$json.preferred_datetime}}",
+            "preferred_time_window": "={{$json.preferred_time_window}}",
+            "deadline": "={{$json.deadline}}",
+            "duration_minutes": "={{$json.duration_minutes}}",
+            "time_zone": "={{$json.time_zone}}",
+            "agenda": "={{$json.agenda}}",
+            "prep_materials": "={{$json.prep_materials}}",
+            "location": "={{$json.location}}",
+            "video_link": "={{$json.video_link}}",
+            "dial_in_details": "={{$json.dial_in_details}}",
+            "confidentiality_level": "={{$json.confidentiality_level}}",
+            "recurrence_required": "={{$json.recurrence_required}}",
+            "boss_required": "={{$json.boss_required}}",
+            "required_attendees_json": "={{$json.required_attendees_json}}",
+            "optional_attendees_json": "={{$json.optional_attendees_json}}",
+            "hold_owner": "={{$json.hold_owner}}",
+            "hold_expiry": "={{$json.hold_expiry}}",
+            "travel_required": "={{$json.travel_required}}",
+            "prep_required": "={{$json.prep_required}}",
+            "follow_up_expected": "={{$json.follow_up_expected}}"
+          }
+        }
+      },
+      "id": "exec_wf01_parent",
+      "name": "Execute WF-01",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.status}}", "operation": "equal", "value2": "ERROR" }
+          ]
+        }
+      },
+      "id": "if_parent_wf01_error",
+      "name": "IF - WF-01 Error?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [940, 300]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-02 Missing Info + Agenda Check",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf02_parent",
+      "name": "Execute WF-02",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1160, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.status}}", "operation": "equal", "value2": "STOP_MISSING_INFO" },
+            { "value1": "={{$json.status}}", "operation": "equal", "value2": "ERROR" }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_parent_wf02_stop",
+      "name": "IF - WF-02 Stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1380, 360]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-03 Necessity / Delegate / Async Decision",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf03_parent",
+      "name": "Execute WF-03",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1600, 420]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-04 Priority + Urgency Classification",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf04_parent",
+      "name": "Execute WF-04",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [1820, 420]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-05 Availability + Conflict + Time Zone Check",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf05_parent",
+      "name": "Execute WF-05",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [2040, 420]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.status}}", "operation": "regex", "value2": "STOP_" }
+          ]
+        }
+      },
+      "id": "if_parent_wf05_stop",
+      "name": "IF - WF-05 Stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2260, 420]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-06 Buffer / Travel / Focus / Personal-Time Rules",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf06_parent",
+      "name": "Execute WF-06",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [2480, 500]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.status}}", "operation": "regex", "value2": "STOP_" }
+          ]
+        }
+      },
+      "id": "if_parent_wf06_stop",
+      "name": "IF - WF-06 Stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2700, 500]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-07 Calendar Invite Creation + Color Coding",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf07_parent",
+      "name": "Execute WF-07",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [2920, 580]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.status}}", "operation": "regex", "value2": "STOP_" }
+          ]
+        }
+      },
+      "id": "if_parent_wf07_stop",
+      "name": "IF - WF-07 Stop?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3140, 580]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-08 Confirmation + Boss Notification",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf08_parent",
+      "name": "Execute WF-08",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [3360, 660]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  { "value1": "={{$json.special_route || ''}}", "operation": "regex", "value2": "(change|cancellation|urgent_override)" }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "wf09"
+            },
+            {
+              "conditions": {
+                "string": [
+                  { "value1": "={{$json.follow_up_expected ? 'true' : 'false'}}", "operation": "equal", "value2": "true" }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "wf10"
+            }
+          ]
+        },
+        "fallbackOutput": "complete"
+      },
+      "id": "switch_parent_special_routes",
+      "name": "Switch - Route WF-09 or WF-10",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [3580, 660]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-09 Reschedule / Cancel / Urgent Override",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf09_parent",
+      "name": "Execute WF-09",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [3800, 560]
+    },
+    {
+      "parameters": {
+        "workflowId": "WF-10 Daily Review / Weekly Review / Follow-Up",
+        "workflowInputs": {
+          "mappingMode": "passThrough"
+        }
+      },
+      "id": "exec_wf10_parent",
+      "name": "Execute WF-10",
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [3800, 760]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "workflow_status", "value": "PARENT_COMPLETE" },
+            { "name": "status_log_parent_final", "value": "Parent workflow completed routing and processing." }
+          ]
+        }
+      },
+      "id": "set_parent_complete",
+      "name": "Set - Parent Complete",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4040, 660]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_parent",
+      "name": "Final Output - Parent Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [4260, 660]
+    }
+  ],
+  "connections": {
+    "Manual Trigger - Start Command Center": { "main": [[{ "node": "Set - Example Request", "type": "main", "index": 0 }]] },
+    "Set - Example Request": { "main": [[{ "node": "Execute WF-01", "type": "main", "index": 0 }]] },
+    "Execute WF-01": { "main": [[{ "node": "IF - WF-01 Error?", "type": "main", "index": 0 }]] },
+    "IF - WF-01 Error?": {
+      "main": [
+        [{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-02", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-02": { "main": [[{ "node": "IF - WF-02 Stop?", "type": "main", "index": 0 }]] },
+    "IF - WF-02 Stop?": {
+      "main": [
+        [{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-03", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-03": { "main": [[{ "node": "Execute WF-04", "type": "main", "index": 0 }]] },
+    "Execute WF-04": { "main": [[{ "node": "Execute WF-05", "type": "main", "index": 0 }]] },
+    "Execute WF-05": { "main": [[{ "node": "IF - WF-05 Stop?", "type": "main", "index": 0 }]] },
+    "IF - WF-05 Stop?": {
+      "main": [
+        [{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-06", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-06": { "main": [[{ "node": "IF - WF-06 Stop?", "type": "main", "index": 0 }]] },
+    "IF - WF-06 Stop?": {
+      "main": [
+        [{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-07", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-07": { "main": [[{ "node": "IF - WF-07 Stop?", "type": "main", "index": 0 }]] },
+    "IF - WF-07 Stop?": {
+      "main": [
+        [{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-08", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-08": { "main": [[{ "node": "Switch - Route WF-09 or WF-10", "type": "main", "index": 0 }]] },
+    "Switch - Route WF-09 or WF-10": {
+      "main": [
+        [{ "node": "Execute WF-09", "type": "main", "index": 0 }],
+        [{ "node": "Execute WF-10", "type": "main", "index": 0 }],
+        [{ "node": "Set - Parent Complete", "type": "main", "index": 0 }]
+      ]
+    },
+    "Execute WF-09": { "main": [[{ "node": "Set - Parent Complete", "type": "main", "index": 0 }]] },
+    "Execute WF-10": { "main": [[{ "node": "Set - Parent Complete", "type": "main", "index": 0 }]] },
+    "Set - Parent Complete": { "main": [[{ "node": "Final Output - Parent Structured Response", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "parent-file-v1",
+  "meta": {},
+  "id": "ExecutiveCalendarCommandCenterFile",
+  "tags": [{ "name": "executive-calendar" }]
+}

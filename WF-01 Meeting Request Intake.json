@@ -1,0 +1,134 @@
+{
+  "name": "WF-01 Meeting Request Intake",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "status", "value": "IN_PROGRESS" },
+            { "name": "request_status", "value": "intake_started" },
+            { "name": "normalized_request_type", "value": "={{$json.request_type || 'new'}}" }
+          ]
+        }
+      },
+      "id": "set_start",
+      "name": "Set - Start Intake",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.meeting_purpose}}", "operation": "isEmpty" }
+          ]
+        }
+      },
+      "id": "if_purpose",
+      "name": "IF - Purpose Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "purpose_status", "value": "missing" }
+          ]
+        }
+      },
+      "id": "set_purpose_missing",
+      "name": "Set - Purpose Missing",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "purpose_status", "value": "present" }
+          ]
+        }
+      },
+      "id": "set_purpose_present",
+      "name": "Set - Purpose Present",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 320]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge",
+      "name": "Merge - Purpose",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1120, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "desired_outcome_status", "value": "={{$json.desired_outcome ? 'present' : 'missing'}}" },
+            { "name": "special_route", "value": "={{$json.request_type === 'change' ? 'change' : ($json.request_type === 'cancellation' ? 'cancellation' : 'standard')}}"},
+            { "name": "status", "value": "SUCCESS" },
+            { "name": "request_status", "value": "intake_complete_ready_for_wf02" }
+          ]
+        }
+      },
+      "id": "set_output",
+      "name": "Set - WF-01 Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1340, 260]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond",
+      "name": "Final Output - WF-01 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1560, 260]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": { "main": [[{ "node": "Set - Start Intake", "type": "main", "index": 0 }]] },
+    "Set - Start Intake": { "main": [[{ "node": "IF - Purpose Missing?", "type": "main", "index": 0 }]] },
+    "IF - Purpose Missing?": {
+      "main": [
+        [{ "node": "Set - Purpose Missing", "type": "main", "index": 0 }],
+        [{ "node": "Set - Purpose Present", "type": "main", "index": 0 }]
+      ]
+    },
+    "Set - Purpose Missing": { "main": [[{ "node": "Merge - Purpose", "type": "main", "index": 0 }]] },
+    "Set - Purpose Present": { "main": [[{ "node": "Merge - Purpose", "type": "main", "index": 0 }]] },
+    "Merge - Purpose": { "main": [[{ "node": "Set - WF-01 Output", "type": "main", "index": 0 }]] },
+    "Set - WF-01 Output": { "main": [[{ "node": "Final Output - WF-01 Structured Response", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "wf01-file-v1",
+  "meta": {},
+  "id": "WF01File",
+  "tags": [{ "name": "executive-calendar" }]
+}

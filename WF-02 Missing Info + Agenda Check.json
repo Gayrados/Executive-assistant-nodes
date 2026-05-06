@@ -1,0 +1,159 @@
+{
+  "name": "WF-02 Missing Info + Agenda Check",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "missing_information_list", "value": "={{[$json.desired_outcome ? '' : 'desired_outcome', $json.agenda ? '' : 'agenda', $json.time_zone ? '' : 'time_zone', $json.video_link || $json.meeting_format !== 'video' ? '' : 'video_link'].filter(v => v !== '').join(', ')}}" }
+          ]
+        }
+      },
+      "id": "set_missing",
+      "name": "Set - Missing Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            { "value1": "={{$json.missing_information_list}}", "operation": "isNotEmpty" }
+          ]
+        }
+      },
+      "id": "if_missing",
+      "name": "IF - Missing Info?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [660, 260]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "requester@example.com",
+        "subject": "Meeting Request Details Needed",
+        "message": "={{'Please send the following to continue scheduling: ' + $json.missing_information_list}}"
+      },
+      "id": "gmail_missing",
+      "name": "Gmail - Send Missing Info Request",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [900, 180],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_PLACEHOLDER",
+          "name": "GMAIL_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{$json.preferred_datetime}}",
+        "end": "={{new Date(new Date($json.preferred_datetime).getTime() + ($json.duration_minutes * 60000)).toISOString()}}",
+        "additionalFields": {
+          "summary": "={{'Hold - ' + ($json.meeting_purpose || 'Pending Meeting')}}"
+        }
+      },
+      "id": "calendar_hold",
+      "name": "Google Calendar - Create Tentative Hold",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [900, 320],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "status", "value": "STOP_MISSING_INFO" },
+            { "name": "request_status", "value": "waiting_for_missing_information" },
+            { "name": "agenda_status", "value": "={{$json.agenda ? 'present' : 'missing'}}" },
+            { "name": "hold_status", "value": "created" }
+          ]
+        }
+      },
+      "id": "set_stop",
+      "name": "Set - Stop Pending Missing Info",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1140, 240]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            { "name": "status", "value": "SUCCESS" },
+            { "name": "request_status", "value": "wf02_passed_ready_for_wf03" },
+            { "name": "agenda_status", "value": "present" },
+            { "name": "hold_status", "value": "not_needed" }
+          ]
+        }
+      },
+      "id": "set_pass",
+      "name": "Set - WF-02 Passed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [900, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond",
+      "name": "Final Output - WF-02 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [1360, 320]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": { "main": [[{ "node": "Set - Missing Info", "type": "main", "index": 0 }]] },
+    "Set - Missing Info": { "main": [[{ "node": "IF - Missing Info?", "type": "main", "index": 0 }]] },
+    "IF - Missing Info?": {
+      "main": [
+        [
+          { "node": "Gmail - Send Missing Info Request", "type": "main", "index": 0 },
+          { "node": "Google Calendar - Create Tentative Hold", "type": "main", "index": 0 }
+        ],
+        [{ "node": "Set - WF-02 Passed", "type": "main", "index": 0 }]
+      ]
+    },
+    "Gmail - Send Missing Info Request": { "main": [[{ "node": "Set - Stop Pending Missing Info", "type": "main", "index": 0 }]] },
+    "Google Calendar - Create Tentative Hold": { "main": [[{ "node": "Set - Stop Pending Missing Info", "type": "main", "index": 0 }]] },
+    "Set - Stop Pending Missing Info": { "main": [[{ "node": "Final Output - WF-02 Structured Response", "type": "main", "index": 0 }]] },
+    "Set - WF-02 Passed": { "main": [[{ "node": "Final Output - WF-02 Structured Response", "type": "main", "index": 0 }]] }
+  },
+  "pinData": {},
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "versionId": "wf02-file-v1",
+  "meta": {},
+  "id": "WF02File",
+  "tags": [{ "name": "executive-calendar" }]
+}
