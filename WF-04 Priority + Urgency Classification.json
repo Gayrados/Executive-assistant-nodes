@@ -1,0 +1,903 @@
+{
+  "name": "WF-04 Priority + Urgency Classification",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf04",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 340]
+    },
+    {
+      "parameters": {
+        "content": "WF-04 Priority + Urgency Classification\n\nPurpose:\nAssign priority, urgency, internal/external class, and confidentiality/privacy class using the Thinker and Executioner rules.\n\nCoverage:\n- Priority classification\n- Urgency validation\n- Internal vs external classification\n- Confidentiality/privacy classification\n- False urgency handling\n- Approval flagging\n- Error branch",
+        "height": 280,
+        "width": 340,
+        "color": 4
+      },
+      "id": "sticky_wf04_intro",
+      "name": "Sticky Note - WF-04 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-04 Priority + Urgency Classification"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            },
+            {
+              "name": "status_log_wf04_01",
+              "value": "WF-04 started business priority and urgency classification."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_start",
+      "name": "Set - Start WF-04",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 340]
+    },
+    {
+      "parameters": {
+        "content": "Priority rules:\n- Critical/Urgent: crisis, legal, compliance, safety, board emergency, executive-critical deadline\n- High: leadership, board, investor, VIP, strategic, major client/vendor/partner\n- Normal: routine business meetings\n- Low: informational, optional, low-consequence\n- Tentative/Pending: missing purpose, agenda, logistics, confirmation, or unclear executive need",
+        "height": 260,
+        "width": 340,
+        "color": 6
+      },
+      "id": "sticky_wf04_priority",
+      "name": "Sticky Note - Priority Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 40]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.priority_signal || ''}}",
+                    "operation": "regex",
+                    "value2": "(crisis|legal|compliance|safety|board emergency|executive-critical)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "critical"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.priority_signal || $json.meeting_type || ''}}",
+                    "operation": "regex",
+                    "value2": "(leadership|board|investor|vip|strategic|client|vendor|partner)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "high"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.meeting_purpose || ''}}",
+                    "operation": "isEmpty"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "tentative"
+            }
+          ]
+        },
+        "fallbackOutput": "normal"
+      },
+      "id": "switch_wf04_priority",
+      "name": "Switch - Priority Classification",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [860, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "priority_level",
+              "value": "Critical/Urgent"
+            },
+            {
+              "name": "priority_reason",
+              "value": "Crisis, legal, compliance, safety, board emergency, or executive-critical deadline signal detected."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_priority_critical",
+      "name": "Set - Priority Critical",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 200]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "priority_level",
+              "value": "High"
+            },
+            {
+              "name": "priority_reason",
+              "value": "Leadership, board, investor, VIP, strategic, or major external stakeholder signal detected."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_priority_high",
+      "name": "Set - Priority High",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "priority_level",
+              "value": "Tentative/Pending"
+            },
+            {
+              "name": "priority_reason",
+              "value": "Purpose or core details missing. Request cannot exceed tentative status."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_priority_tentative",
+      "name": "Set - Priority Tentative",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 480]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "priority_level",
+              "value": "Normal"
+            },
+            {
+              "name": "priority_reason",
+              "value": "Routine business value assumed pending stronger signal."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_priority_normal",
+      "name": "Set - Priority Normal",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1120, 620]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf04_priority",
+      "name": "Merge - Priority Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1340, 340]
+    },
+    {
+      "parameters": {
+        "content": "Urgency rules:\n- Immediate/Same Day only if evidence-based\n- This Week for real near-term pressure\n- Scheduled/Normal if planned\n- Flexible if easily movable\n- False Urgency/Unclear if unsupported",
+        "height": 220,
+        "width": 300,
+        "color": 5
+      },
+      "id": "sticky_wf04_urgency",
+      "name": "Sticky Note - Urgency Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1460, 40]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.urgency_signal || ''}}",
+                    "operation": "regex",
+                    "value2": "(same day|immediate|today|asap)"
+                  }
+                ],
+                "boolean": [
+                  {
+                    "value1": "={{$json.urgency_validated === true || $json.urgency_validated === 'true'}}",
+                    "operation": "isTrue"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "immediate"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.urgency_signal || ''}}",
+                    "operation": "regex",
+                    "value2": "(this week|week)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "this_week"
+            },
+            {
+              "conditions": {
+                "boolean": [
+                  {
+                    "value1": "={{$json.false_urgency === true || $json.false_urgency === 'true'}}",
+                    "operation": "isTrue"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "false_urgency"
+            }
+          ]
+        },
+        "fallbackOutput": "scheduled"
+      },
+      "id": "switch_wf04_urgency",
+      "name": "Switch - Urgency Classification",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1680, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "urgency_level",
+              "value": "Immediate/Same Day"
+            },
+            {
+              "name": "urgency_reason",
+              "value": "Validated same-day timing pressure."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_urgency_immediate",
+      "name": "Set - Urgency Immediate",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1940, 200]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "urgency_level",
+              "value": "This Week"
+            },
+            {
+              "name": "urgency_reason",
+              "value": "Near-term pressure inside the current week."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_urgency_week",
+      "name": "Set - Urgency This Week",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1940, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "urgency_level",
+              "value": "False Urgency/Unclear"
+            },
+            {
+              "name": "urgency_reason",
+              "value": "Urgency claim is unsupported and does not justify disruption."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_urgency_false",
+      "name": "Set - Urgency False",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1940, 480]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "urgency_level",
+              "value": "Scheduled/Normal"
+            },
+            {
+              "name": "urgency_reason",
+              "value": "No extraordinary timing pressure validated."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_urgency_normal",
+      "name": "Set - Urgency Normal",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1940, 620]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf04_urgency",
+      "name": "Merge - Urgency Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2160, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.required_attendees_json || ''}}",
+              "operation": "regex",
+              "value2": "@"
+            }
+          ]
+        }
+      },
+      "id": "if_wf04_external_check",
+      "name": "IF - External Attendee Signal?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2380, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "audience_class",
+              "value": "external_or_mixed"
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_external",
+      "name": "Set - Audience External or Mixed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2620, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "audience_class",
+              "value": "internal"
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_internal",
+      "name": "Set - Audience Internal",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2620, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf04_audience",
+      "name": "Merge - Audience Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2840, 340]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.confidentiality_signal || $json.confidentiality_level || ''}}",
+                    "operation": "regex",
+                    "value2": "(legal|hr|compensation|m&a|board|medical|personal|restricted|confidential)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "restricted"
+            }
+          ]
+        },
+        "fallbackOutput": "standard"
+      },
+      "id": "switch_wf04_privacy",
+      "name": "Switch - Privacy Classification",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [3060, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "confidentiality_level",
+              "value": "restricted"
+            },
+            {
+              "name": "approval_required",
+              "value": "privacy_controls_required"
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_privacy_restricted",
+      "name": "Set - Privacy Restricted",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3300, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "confidentiality_level",
+              "value": "standard"
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_privacy_standard",
+      "name": "Set - Privacy Standard",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3300, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf04_final",
+      "name": "Merge - WF-04 Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [3520, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf04_passed_ready_for_wf05"
+            },
+            {
+              "name": "status_log_wf04_02",
+              "value": "WF-04 completed priority, urgency, audience, and privacy classification."
+            }
+          ]
+        }
+      },
+      "id": "set_wf04_success",
+      "name": "Set - WF-04 Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3740, 340]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf04",
+      "name": "Final Output - WF-04 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3960, 340]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-04",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-04": {
+      "main": [
+        [
+          {
+            "node": "Switch - Priority Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Priority Classification": {
+      "main": [
+        [
+          {
+            "node": "Set - Priority Critical",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Priority High",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Priority Tentative",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Priority Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Priority Critical": {
+      "main": [
+        [
+          {
+            "node": "Merge - Priority Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Priority High": {
+      "main": [
+        [
+          {
+            "node": "Merge - Priority Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Priority Tentative": {
+      "main": [
+        [
+          {
+            "node": "Merge - Priority Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Priority Normal": {
+      "main": [
+        [
+          {
+            "node": "Merge - Priority Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Priority Result": {
+      "main": [
+        [
+          {
+            "node": "Switch - Urgency Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Urgency Classification": {
+      "main": [
+        [
+          {
+            "node": "Set - Urgency Immediate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Urgency This Week",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Urgency False",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Urgency Normal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgency Immediate": {
+      "main": [
+        [
+          {
+            "node": "Merge - Urgency Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgency This Week": {
+      "main": [
+        [
+          {
+            "node": "Merge - Urgency Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgency False": {
+      "main": [
+        [
+          {
+            "node": "Merge - Urgency Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgency Normal": {
+      "main": [
+        [
+          {
+            "node": "Merge - Urgency Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Urgency Result": {
+      "main": [
+        [
+          {
+            "node": "IF - External Attendee Signal?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - External Attendee Signal?": {
+      "main": [
+        [
+          {
+            "node": "Set - Audience External or Mixed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Audience Internal",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Audience External or Mixed": {
+      "main": [
+        [
+          {
+            "node": "Merge - Audience Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Audience Internal": {
+      "main": [
+        [
+          {
+            "node": "Merge - Audience Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Audience Result": {
+      "main": [
+        [
+          {
+            "node": "Switch - Privacy Classification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Privacy Classification": {
+      "main": [
+        [
+          {
+            "node": "Set - Privacy Restricted",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Privacy Standard",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Privacy Restricted": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-04 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Privacy Standard": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-04 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - WF-04 Final": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-04 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - WF-04 Success": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-04 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "meeting_purpose": "Partner strategy session",
+          "meeting_type": "partner",
+          "priority_signal": "strategic partner",
+          "urgency_signal": "this week",
+          "urgency_validated": true,
+          "required_attendees_json": "[\"exec@company.com\",\"partnerlead@external.com\"]",
+          "confidentiality_signal": "standard"
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch2-wf04-v1",
+  "meta": {},
+  "id": "WF04PriorityUrgencyClassification",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-04"
+    }
+  ]
+}

@@ -1,0 +1,454 @@
+{
+  "name": "WF-08 Confirmation + Boss Notification",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf08",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 340]
+    },
+    {
+      "parameters": {
+        "content": "WF-08 Confirmation + Boss Notification\n\nPurpose:\nSend attendee confirmation, enforce stronger external confirmation discipline, notify the executive at the correct level, and route prep and review tasks forward.\n\nCoverage:\n- Confirmation communication\n- External confirmation discipline\n- Boss notification\n- Boss briefing conditions\n- Prep-needed signal for WF-10\n- Error branch",
+        "height": 280,
+        "width": 340,
+        "color": 4
+      },
+      "id": "sticky_wf08_intro",
+      "name": "Sticky Note - WF-08 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-08 Confirmation + Boss Notification"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_start",
+      "name": "Set - Start WF-08",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.audience_class || ''}}",
+              "operation": "equal",
+              "value2": "external_or_mixed"
+            }
+          ]
+        }
+      },
+      "id": "if_wf08_external_confirmation",
+      "name": "IF - External Confirmation Needed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 340]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "requester@example.com",
+        "subject": "Final Meeting Confirmation",
+        "message": "={{'Confirming we are set for ' + ($json.preferred_datetime || '') + '. Details are in the invite, including ' + ($json.location || $json.video_link || 'the invite details') + '.'}}"
+      },
+      "id": "gmail_wf08_external_confirm",
+      "name": "Gmail - Send External Confirmation",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [920, 260],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_PLACEHOLDER",
+          "name": "GMAIL_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "confirmation_status",
+              "value": "external_confirmation_sent"
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_confirmed_external",
+      "name": "Set - External Confirmation Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1160, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "confirmation_status",
+              "value": "internal_or_standard_confirmation"
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_confirmed_standard",
+      "name": "Set - Standard Confirmation Status",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [920, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf08_confirmation",
+      "name": "Merge - Confirmation Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1400, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.priority_level || ''}}",
+              "operation": "equal",
+              "value2": "High"
+            },
+            {
+              "value1": "={{$json.priority_level || ''}}",
+              "operation": "equal",
+              "value2": "Critical/Urgent"
+            },
+            {
+              "value1": "={{$json.audience_class || ''}}",
+              "operation": "equal",
+              "value2": "external_or_mixed"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf08_boss_notify_active",
+      "name": "IF - Active Boss Notification Required?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1640, 340]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "executive-calendar-alerts",
+        "text": "={{'Added to calendar: ' + ($json.event_title || $json.meeting_purpose || 'Meeting') + '. Priority: ' + ($json.priority_level || '') + '. Notes: ' + ($json.priority_reason || '') + '. Prep needed: ' + (($json.prep_block_needed === true || $json.prep_block_needed === 'true') ? 'yes' : 'no') + '. Change impact: ' + ($json.request_status || 'none')}}"
+      },
+      "id": "slack_wf08_boss_notify",
+      "name": "Slack - Notify Boss",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [1880, 260],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "SLACK_CREDENTIAL_PLACEHOLDER",
+          "name": "SLACK_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "boss_notification_status",
+              "value": "active_notification_sent"
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_boss_active",
+      "name": "Set - Boss Active Notification",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2120, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "boss_notification_status",
+              "value": "passive_visibility_only"
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_boss_passive",
+      "name": "Set - Boss Passive Visibility",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1880, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf08_boss",
+      "name": "Merge - Boss Notification Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2360, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf08_passed_ready_for_wf09_or_wf10"
+            },
+            {
+              "name": "status_log_wf08_01",
+              "value": "WF-08 completed attendee confirmation and boss notification logic."
+            }
+          ]
+        }
+      },
+      "id": "set_wf08_success",
+      "name": "Set - WF-08 Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2600, 340]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf08",
+      "name": "Final Output - WF-08 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [2840, 340]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-08",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-08": {
+      "main": [
+        [
+          {
+            "node": "IF - External Confirmation Needed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - External Confirmation Needed?": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send External Confirmation",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Standard Confirmation Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Send External Confirmation": {
+      "main": [
+        [
+          {
+            "node": "Set - External Confirmation Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - External Confirmation Status": {
+      "main": [
+        [
+          {
+            "node": "Merge - Confirmation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Standard Confirmation Status": {
+      "main": [
+        [
+          {
+            "node": "Merge - Confirmation Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Confirmation Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Active Boss Notification Required?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Active Boss Notification Required?": {
+      "main": [
+        [
+          {
+            "node": "Slack - Notify Boss",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Boss Passive Visibility",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Notify Boss": {
+      "main": [
+        [
+          {
+            "node": "Set - Boss Active Notification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Boss Active Notification": {
+      "main": [
+        [
+          {
+            "node": "Merge - Boss Notification Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Boss Passive Visibility": {
+      "main": [
+        [
+          {
+            "node": "Merge - Boss Notification Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Boss Notification Result": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-08 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - WF-08 Success": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-08 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "meeting_purpose": "Partner Strategy Session",
+          "event_title": "Partner Strategy Session",
+          "priority_level": "High",
+          "priority_reason": "Strategic partner decision",
+          "audience_class": "external_or_mixed",
+          "preferred_datetime": "2026-05-12T11:30:00-07:00",
+          "location": "East Harbor Partner Office",
+          "prep_block_needed": true,
+          "request_status": "confirmed_ready_for_notification"
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch3-wf08-v1",
+  "meta": {},
+  "id": "WF08ConfirmationBossNotification",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-08"
+    }
+  ]
+}

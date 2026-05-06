@@ -1,0 +1,719 @@
+{
+  "name": "WF-05 Availability + Conflict + Time Zone Check",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf05",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 340]
+    },
+    {
+      "parameters": {
+        "content": "WF-05 Availability + Conflict + Time Zone Check\n\nPurpose:\nEvaluate executive availability, attendee overlap, time-zone correctness, duration reasonableness, and hard/soft conflict state.\n\nCoverage:\n- Boss availability\n- Required attendee availability\n- Optional attendee impact\n- Time-zone validation\n- Duration validation\n- Conflict detection\n- Double-booking and recurring conflict signal\n- Stop or continue status",
+        "height": 300,
+        "width": 340,
+        "color": 4
+      },
+      "id": "sticky_wf05_intro",
+      "name": "Sticky Note - WF-05 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-05 Availability + Conflict + Time Zone Check"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            },
+            {
+              "name": "status_log_wf05_01",
+              "value": "WF-05 started availability, time-zone, and conflict analysis."
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_start",
+      "name": "Set - Start WF-05",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 340]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "timeMin": "={{$json.preferred_datetime}}",
+        "timeMax": "={{new Date(new Date($json.preferred_datetime).getTime() + ($json.duration_minutes * 60000)).toISOString()}}",
+        "returnAll": true
+      },
+      "id": "google_wf05_exec_calendar",
+      "name": "Google Calendar - Check Executive Availability",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [700, 260],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "executive_window_status",
+              "value": "checked"
+            },
+            {
+              "name": "status_log_wf05_02",
+              "value": "Executive calendar checked for slot overlap."
+            }
+          ],
+          "boolean": [
+            {
+              "name": "executive_hard_conflict",
+              "value": "={{Array.isArray($json) ? $json.length > 0 : false}}"
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_exec_availability_result",
+      "name": "Set - Executive Availability Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [940, 260]
+    },
+    {
+      "parameters": {
+        "content": "Time-zone validation.\n\nRules:\n- No finalization if missing or ambiguous zone\n- Convert into executive zone\n- Recheck DST and travel context\n- Include attendee-relevant zone for external meetings when useful",
+        "height": 220,
+        "width": 300,
+        "color": 6
+      },
+      "id": "sticky_wf05_timezone",
+      "name": "Sticky Note - Time Zone Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [620, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.time_zone}}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "if_wf05_timezone_missing",
+      "name": "IF - Time Zone Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1180, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_MISSING_INFO"
+            },
+            {
+              "name": "timezone_issue",
+              "value": "missing"
+            },
+            {
+              "name": "request_status",
+              "value": "timezone_clarification_required"
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_timezone_stop",
+      "name": "Set - Stop for Missing Time Zone",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1420, 220]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "timezone_issue",
+              "value": "none"
+            },
+            {
+              "name": "normalized_executive_time",
+              "value": "={{$json.preferred_datetime}}"
+            },
+            {
+              "name": "status_log_wf05_03",
+              "value": "Time zone present and normalized for downstream scheduling."
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_timezone_ok",
+      "name": "Set - Time Zone OK",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1420, 420]
+    },
+    {
+      "parameters": {
+        "content": "Duration validation.\n\nRule:\nDefault to shortest useful duration. Overlong low-value requests should be shortened.",
+        "height": 180,
+        "width": 260,
+        "color": 5
+      },
+      "id": "sticky_wf05_duration",
+      "name": "Sticky Note - Duration Validation",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1600, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "number": [
+            {
+              "value1": "={{$json.duration_minutes}}",
+              "operation": "larger",
+              "value2": 60
+            }
+          ]
+        }
+      },
+      "id": "if_wf05_duration_long",
+      "name": "IF - Duration Excessive?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1660, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "duration_issue",
+              "value": "propose_shorten"
+            }
+          ],
+          "number": [
+            {
+              "name": "approved_duration_minutes",
+              "value": 50
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_duration_shorten",
+      "name": "Set - Duration Needs Shortening",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1900, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "duration_issue",
+              "value": "none"
+            }
+          ],
+          "number": [
+            {
+              "name": "approved_duration_minutes",
+              "value": "={{$json.duration_minutes}}"
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_duration_ok",
+      "name": "Set - Duration OK",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1900, 420]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf05_duration",
+      "name": "Merge - Duration Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2120, 340]
+    },
+    {
+      "parameters": {
+        "content": "Attendee availability and conflict summary.\n\nRequired attendee conflict is hard.\nOptional attendee conflict is soft.\nRecurring conflict and overload can also surface as soft or hard risk.",
+        "height": 220,
+        "width": 320,
+        "color": 7
+      },
+      "id": "sticky_wf05_conflicts",
+      "name": "Sticky Note - Conflict Logic",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2240, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "boolean": [
+            {
+              "name": "required_attendee_issue",
+              "value": "={{$json.required_attendee_issue === true || $json.required_attendee_issue === 'true'}}"
+            },
+            {
+              "name": "optional_attendee_issue",
+              "value": "={{$json.optional_attendee_issue === true || $json.optional_attendee_issue === 'true'}}"
+            },
+            {
+              "name": "recurring_commitment_issue",
+              "value": "={{$json.recurring_commitment_issue === true || $json.recurring_commitment_issue === 'true'}}"
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_attendee_flags",
+      "name": "Set - Attendee and Recurring Flags",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2360, 340]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.executive_hard_conflict}}",
+              "operation": "isTrue"
+            },
+            {
+              "value1": "={{$json.required_attendee_issue}}",
+              "operation": "isTrue"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf05_hard_conflict",
+      "name": "IF - Hard Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2600, 340]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "hard_conflict_type",
+              "value": "calendar_overlap_or_required_attendee_unavailable"
+            },
+            {
+              "name": "status",
+              "value": "STOP_RESCHEDULE_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "hard_conflict_detected"
+            }
+          ],
+          "boolean": [
+            {
+              "name": "hard_conflict",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_hard_conflict",
+      "name": "Set - Hard Conflict Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2840, 260]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.optional_attendee_issue}}",
+              "operation": "isTrue"
+            },
+            {
+              "value1": "={{$json.recurring_commitment_issue}}",
+              "operation": "isTrue"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf05_soft_conflict",
+      "name": "IF - Soft Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2840, 420]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "soft_conflict_type",
+              "value": "optional_attendee_or_recurring_pressure"
+            },
+            {
+              "name": "status",
+              "value": "SUCCESS_WITH_WARNINGS"
+            },
+            {
+              "name": "request_status",
+              "value": "soft_conflict_flagged"
+            }
+          ],
+          "boolean": [
+            {
+              "name": "soft_conflict",
+              "value": true
+            },
+            {
+              "name": "hard_conflict",
+              "value": false
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_soft_conflict",
+      "name": "Set - Soft Conflict Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3080, 380]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf05_passed_ready_for_wf06"
+            },
+            {
+              "name": "status_log_wf05_04",
+              "value": "WF-05 completed with no hard conflict."
+            }
+          ],
+          "boolean": [
+            {
+              "name": "hard_conflict",
+              "value": false
+            },
+            {
+              "name": "soft_conflict",
+              "value": false
+            }
+          ]
+        }
+      },
+      "id": "set_wf05_no_conflict",
+      "name": "Set - No Conflict Result",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3080, 540]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf05",
+      "name": "Final Output - WF-05 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3320, 420]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-05",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-05": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Check Executive Availability",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Check Executive Availability": {
+      "main": [
+        [
+          {
+            "node": "Set - Executive Availability Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Executive Availability Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Time Zone Missing?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Time Zone Missing?": {
+      "main": [
+        [
+          {
+            "node": "Set - Stop for Missing Time Zone",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Time Zone OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Stop for Missing Time Zone": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-05 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Time Zone OK": {
+      "main": [
+        [
+          {
+            "node": "IF - Duration Excessive?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Duration Excessive?": {
+      "main": [
+        [
+          {
+            "node": "Set - Duration Needs Shortening",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Duration OK",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Duration Needs Shortening": {
+      "main": [
+        [
+          {
+            "node": "Merge - Duration Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Duration OK": {
+      "main": [
+        [
+          {
+            "node": "Merge - Duration Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Duration Result": {
+      "main": [
+        [
+          {
+            "node": "Set - Attendee and Recurring Flags",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Attendee and Recurring Flags": {
+      "main": [
+        [
+          {
+            "node": "IF - Hard Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Hard Conflict?": {
+      "main": [
+        [
+          {
+            "node": "Set - Hard Conflict Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Soft Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Hard Conflict Result": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-05 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Soft Conflict?": {
+      "main": [
+        [
+          {
+            "node": "Set - Soft Conflict Result",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - No Conflict Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Soft Conflict Result": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-05 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - No Conflict Result": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-05 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "preferred_datetime": "2026-05-12T15:00:00-07:00",
+          "duration_minutes": 30,
+          "time_zone": "Asia/Singapore",
+          "required_attendee_issue": false,
+          "optional_attendee_issue": false,
+          "recurring_commitment_issue": false
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch2-wf05-v1",
+  "meta": {},
+  "id": "WF05AvailabilityConflictTimeZoneCheck",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-05"
+    }
+  ]
+}

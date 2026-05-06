@@ -1,0 +1,704 @@
+{
+  "name": "WF-10 Daily Review / Weekly Review / Follow-Up",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf10",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 360]
+    },
+    {
+      "parameters": {
+        "content": "WF-10 Daily Review / Weekly Review / Follow-Up\n\nPurpose:\nHandle recurring review, daily calendar review, weekly planning, meeting prep, post-meeting follow-up, action-item tracking, and final audit-style operating checks.\n\nCoverage:\n- Recurring meeting review\n- Day-before review\n- Same-day / daily review\n- Weekly planning review\n- Meeting prep packet step\n- Post-meeting follow-up\n- Action-item tracking\n- Final operating completeness signal",
+        "height": 320,
+        "width": 360,
+        "color": 4
+      },
+      "id": "sticky_wf10_intro",
+      "name": "Sticky Note - WF-10 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-10 Daily Review / Weekly Review / Follow-Up"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_start",
+      "name": "Set - Start WF-10",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 360]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.wf10_mode || ''}}",
+                    "operation": "equal",
+                    "value2": "daily_review"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "daily_review"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.wf10_mode || ''}}",
+                    "operation": "equal",
+                    "value2": "weekly_review"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "weekly_review"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.wf10_mode || ''}}",
+                    "operation": "equal",
+                    "value2": "follow_up"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "follow_up"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.wf10_mode || ''}}",
+                    "operation": "equal",
+                    "value2": "recurring_review"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "recurring_review"
+            }
+          ]
+        },
+        "fallbackOutput": "prep"
+      },
+      "id": "switch_wf10_mode",
+      "name": "Switch - WF-10 Mode",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [680, 360]
+    },
+    {
+      "parameters": {
+        "content": "Daily review:\n- today’s meetings\n- conflicts\n- missing links/agendas/locations\n- travel and buffers\n- lunch/breaks\n- urgent changes\n- boss briefing need\n- time-zone-sensitive meetings\n- follow-ups due today",
+        "height": 240,
+        "width": 300,
+        "color": 6
+      },
+      "id": "sticky_wf10_daily",
+      "name": "Sticky Note - Daily Review Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [900, 40]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "timeMin": "={{$json.review_window_start || '2026-05-11T08:30:00-07:00'}}",
+        "timeMax": "={{$json.review_window_end || '2026-05-11T18:00:00-07:00'}}",
+        "returnAll": true
+      },
+      "id": "google_wf10_daily_load",
+      "name": "Google Calendar - Load Review Window",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [980, 280],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "daily_review_status",
+              "value": "completed"
+            },
+            {
+              "name": "status_log_wf10_01",
+              "value": "Daily review completed for today or tomorrow review window."
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_daily_done",
+      "name": "Set - Daily Review Done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1220, 280]
+    },
+    {
+      "parameters": {
+        "content": "Weekly planning:\n- review next week\n- overloaded days\n- travel\n- deadlines\n- focus time\n- recurring meetings\n- meetings to decline/move/shorten/delegate/async\n- color coding and support blocks",
+        "height": 220,
+        "width": 300,
+        "color": 5
+      },
+      "id": "sticky_wf10_weekly",
+      "name": "Sticky Note - Weekly Planning Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1360, 40]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "timeMin": "={{$json.next_week_start || '2026-05-18T08:00:00-07:00'}}",
+        "timeMax": "={{$json.next_week_end || '2026-05-22T18:00:00-07:00'}}",
+        "returnAll": true
+      },
+      "id": "google_wf10_weekly_load",
+      "name": "Google Calendar - Load Next Week",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [1460, 420],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "weekly_review_status",
+              "value": "completed"
+            },
+            {
+              "name": "status_log_wf10_02",
+              "value": "Weekly planning review completed."
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_weekly_done",
+      "name": "Set - Weekly Review Done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1700, 420]
+    },
+    {
+      "parameters": {
+        "content": "Follow-up and action tracking:\n- capture action items\n- owner and due date required\n- executive commitments visible\n- new meeting requirement restarts workflow",
+        "height": 220,
+        "width": 300,
+        "color": 7
+      },
+      "id": "sticky_wf10_followup",
+      "name": "Sticky Note - Follow-Up Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1840, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.action_item || ''}}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{$json.action_owner || ''}}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{$json.action_due_date || ''}}",
+              "operation": "isEmpty"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf10_followup_missing_fields",
+      "name": "IF - Follow-Up Fields Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1940, 280]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_MISSING_INFO"
+            },
+            {
+              "name": "request_status",
+              "value": "follow_up_fields_missing"
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_followup_stop",
+      "name": "Set - Follow-Up Missing Fields",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2180, 220]
+    },
+    {
+      "parameters": {
+        "operation": "create",
+        "tableId": "FOLLOW_UP_TRACKER_TABLE_PLACEHOLDER",
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "related_meeting_id": "={{$json.related_meeting_id || 'MEETING_PLACEHOLDER'}}",
+            "action_item": "={{$json.action_item}}",
+            "owner": "={{$json.action_owner}}",
+            "due_date": "={{$json.action_due_date}}",
+            "status": "Open"
+          }
+        }
+      },
+      "id": "airtable_wf10_followup_create",
+      "name": "Airtable - Create Follow-Up Item",
+      "type": "n8n-nodes-base.airtable",
+      "typeVersion": 2.1,
+      "position": [2180, 340],
+      "credentials": {
+        "airtableTokenApi": {
+          "id": "AIRTABLE_CREDENTIAL_PLACEHOLDER",
+          "name": "AIRTABLE_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "follow_up_status",
+              "value": "tracked"
+            },
+            {
+              "name": "status_log_wf10_03",
+              "value": "Post-meeting follow-up captured and action item entered into tracker."
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_followup_done",
+      "name": "Set - Follow-Up Tracked",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2420, 340]
+    },
+    {
+      "parameters": {
+        "content": "Recurring review:\n- purpose still valid\n- review date present\n- cadence and duration still useful\n- repeated conflicts flagged\n- executive still required\n- delegate possible",
+        "height": 220,
+        "width": 300,
+        "color": 6
+      },
+      "id": "sticky_wf10_recurring",
+      "name": "Sticky Note - Recurring Review Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2580, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.recurrence_review_date || ''}}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "if_wf10_recurring_review_missing",
+      "name": "IF - Recurring Review Date Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2660, 520]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_VALIDATION_FAILED"
+            },
+            {
+              "name": "request_status",
+              "value": "recurring_review_date_missing"
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_recurring_stop",
+      "name": "Set - Recurring Review Stop",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2900, 460]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "recurring_review_status",
+              "value": "completed"
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_recurring_done",
+      "name": "Set - Recurring Review Done",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2900, 580]
+    },
+    {
+      "parameters": {
+        "content": "Prep signal:\nIf prep needed, downstream run should build packet using agenda, context, attendees, prior notes, decisions needed, logistics, risks, and follow-up expectation.",
+        "height": 180,
+        "width": 320,
+        "color": 5
+      },
+      "id": "sticky_wf10_prep",
+      "name": "Sticky Note - Prep Signal",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3060, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "prep_packet_status",
+              "value": "required_if_flagged"
+            },
+            {
+              "name": "final_audit_signal",
+              "value": "wf10_completed_operating_cycle"
+            },
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf10_completed"
+            }
+          ]
+        }
+      },
+      "id": "set_wf10_success",
+      "name": "Set - WF-10 Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3140, 360]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf10",
+      "name": "Final Output - WF-10 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3380, 360]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-10": {
+      "main": [
+        [
+          {
+            "node": "Switch - WF-10 Mode",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - WF-10 Mode": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Load Review Window",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar - Load Next Week",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Follow-Up Fields Missing?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Recurring Review Date Missing?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - WF-10 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Load Review Window": {
+      "main": [
+        [
+          {
+            "node": "Set - Daily Review Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Daily Review Done": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-10 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Load Next Week": {
+      "main": [
+        [
+          {
+            "node": "Set - Weekly Review Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Weekly Review Done": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-10 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Follow-Up Fields Missing?": {
+      "main": [
+        [
+          {
+            "node": "Set - Follow-Up Missing Fields",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Airtable - Create Follow-Up Item",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Follow-Up Missing Fields": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-10 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Airtable - Create Follow-Up Item": {
+      "main": [
+        [
+          {
+            "node": "Set - Follow-Up Tracked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Follow-Up Tracked": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-10 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Recurring Review Date Missing?": {
+      "main": [
+        [
+          {
+            "node": "Set - Recurring Review Stop",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Recurring Review Done",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Recurring Review Stop": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-10 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Recurring Review Done": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-10 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - WF-10 Success": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-10 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "wf10_mode": "follow_up",
+          "related_meeting_id": "EVT-2026-05-12-PARTNER-01",
+          "action_item": "Schedule partner follow-up call",
+          "action_owner": "EA",
+          "action_due_date": "2026-05-15",
+          "recurrence_review_date": "2026-06-15"
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch4-wf10-v1",
+  "meta": {},
+  "id": "WF10DailyReviewWeeklyReviewFollowUp",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-10"
+    }
+  ]
+}

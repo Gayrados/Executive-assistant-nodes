@@ -1,0 +1,860 @@
+{
+  "name": "WF-07 Calendar Invite Creation + Color Coding",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf07",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 360]
+    },
+    {
+      "parameters": {
+        "content": "WF-07 Calendar Invite Creation + Color Coding\n\nPurpose:\nCreate the calendar event, complete all required details, apply reminders/privacy/recurrence, assign final color/category, create support blocks, and validate the invite.\n\nCoverage:\n- Calendar invite creation\n- Calendar invite detail completion\n- Reminder settings\n- Privacy/visibility settings\n- Recurrence settings\n- Color coding rules\n- Travel/prep/buffer support blocks\n- Calendar invite validation",
+        "height": 320,
+        "width": 360,
+        "color": 4
+      },
+      "id": "sticky_wf07_intro",
+      "name": "Sticky Note - WF-07 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-07 Calendar Invite Creation + Color Coding"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_start",
+      "name": "Set - Start WF-07",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [440, 360]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{$json.preferred_datetime}}",
+        "end": "={{new Date(new Date($json.preferred_datetime).getTime() + (($json.approved_duration_minutes || $json.duration_minutes) * 60000)).toISOString()}}",
+        "additionalFields": {
+          "summary": "={{$json.event_title || $json.meeting_purpose || 'Meeting'}}",
+          "description": "={{'Purpose: ' + ($json.meeting_purpose || '') + '\\nOutcome: ' + ($json.desired_outcome || '') + '\\nAgenda: ' + ($json.agenda || '') + '\\nPrep: ' + ($json.prep_materials || '')}}",
+          "location": "={{$json.location || ''}}"
+        }
+      },
+      "id": "google_wf07_create_event",
+      "name": "Google Calendar - Create Draft Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [720, 360],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "event_status",
+              "value": "draft_created"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_draft_created",
+      "name": "Set - Draft Event Created",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 360]
+    },
+    {
+      "parameters": {
+        "content": "Color rules:\n- Red urgent\n- Purple board/investor/leadership/strategic/VIP unless urgent\n- Yellow focus/prep/review/deep work\n- Orange travel/logistics\n- Gray personal/unavailable\n- Pink tentative/pending/missing details\n- Blue internal routine\n- Green external routine",
+        "height": 240,
+        "width": 320,
+        "color": 6
+      },
+      "id": "sticky_wf07_color",
+      "name": "Sticky Note - Color Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [1160, 40]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.urgency_level || ''}}",
+                    "operation": "equal",
+                    "value2": "Immediate/Same Day"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "red"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.meeting_type || ''}}",
+                    "operation": "regex",
+                    "value2": "(board|investor|leadership|strategic|vip)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "purple"
+            },
+            {
+              "conditions": {
+                "boolean": [
+                  {
+                    "value1": "={{$json.travel_block_needed === true || $json.travel_block_needed === 'true'}}",
+                    "operation": "isTrue"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "green_or_orange_parent"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.audience_class || ''}}",
+                    "operation": "equal",
+                    "value2": "internal"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "blue"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.request_status || ''}}",
+                    "operation": "regex",
+                    "value2": "(tentative|pending|missing)"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "pink"
+            }
+          ]
+        },
+        "fallbackOutput": "green"
+      },
+      "id": "switch_wf07_color",
+      "name": "Switch - Assign Event Color",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [1400, 360]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "color_code",
+              "value": "Red"
+            },
+            {
+              "name": "category_label",
+              "value": "Urgent / Critical"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_color_red",
+      "name": "Set - Color Red",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1640, 120]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "color_code",
+              "value": "Purple"
+            },
+            {
+              "name": "category_label",
+              "value": "Strategic / VIP / Board / Investor"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_color_purple",
+      "name": "Set - Color Purple",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1640, 240]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "color_code",
+              "value": "Green"
+            },
+            {
+              "name": "category_label",
+              "value": "External"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_color_green",
+      "name": "Set - Color Green",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1640, 360]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "color_code",
+              "value": "Blue"
+            },
+            {
+              "name": "category_label",
+              "value": "Internal"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_color_blue",
+      "name": "Set - Color Blue",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1640, 480]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "color_code",
+              "value": "Pink"
+            },
+            {
+              "name": "category_label",
+              "value": "Tentative / Pending"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_color_pink",
+      "name": "Set - Color Pink",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1640, 600]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf07_color",
+      "name": "Merge - Color Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1880, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.travel_block_needed === true || $json.travel_block_needed === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf07_create_travel_block",
+      "name": "IF - Create Travel Blocks?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2120, 220]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{new Date(new Date($json.preferred_datetime).getTime() - ($json.travel_minutes_before * 60000)).toISOString()}}",
+        "end": "={{$json.preferred_datetime}}",
+        "additionalFields": {
+          "summary": "={{'Travel - ' + ($json.meeting_purpose || 'Meeting')}}",
+          "description": "={{'Orange travel block linked to in-person meeting. Address: ' + ($json.location || '')}}"
+        }
+      },
+      "id": "google_wf07_travel_before",
+      "name": "Google Calendar - Create Travel Before",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [2360, 140],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{new Date(new Date($json.preferred_datetime).getTime() + (($json.approved_duration_minutes || $json.duration_minutes) * 60000)).toISOString()}}",
+        "end": "={{new Date(new Date($json.preferred_datetime).getTime() + (($json.approved_duration_minutes || $json.duration_minutes + $json.travel_minutes_after) * 60000)).toISOString()}}",
+        "additionalFields": {
+          "summary": "={{'Travel - Return from ' + ($json.meeting_purpose || 'Meeting')}}",
+          "description": "={{'Orange return travel block linked to in-person meeting.'}}"
+        }
+      },
+      "id": "google_wf07_travel_after",
+      "name": "Google Calendar - Create Travel After",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [2360, 280],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.prep_block_needed === true || $json.prep_block_needed === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf07_create_prep_block",
+      "name": "IF - Create Prep Block?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2120, 460]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "start": "={{new Date(new Date($json.preferred_datetime).getTime() - ($json.prep_minutes * 60000)).toISOString()}}",
+        "end": "={{$json.preferred_datetime}}",
+        "additionalFields": {
+          "summary": "={{'Prep - ' + ($json.meeting_purpose || 'Meeting')}}",
+          "description": "={{'Yellow prep block linked to high-stakes meeting.'}}"
+        }
+      },
+      "id": "google_wf07_prep_block",
+      "name": "Google Calendar - Create Prep Block",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [2360, 420],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "reminder_settings",
+              "value": "standard_plus_early_for_high_priority"
+            },
+            {
+              "name": "visibility_setting",
+              "value": "={{$json.confidentiality_level === 'restricted' ? 'private' : 'busy'}}"
+            },
+            {
+              "name": "recurrence_rule",
+              "value": "={{$json.recurrence_required === 'true' ? ($json.recurrence_rule || 'REQUIRES_REVIEW_DATE') : 'none'}}"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_event_controls",
+      "name": "Set - Reminder Privacy Recurrence",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2600, 600]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.event_title || $json.meeting_purpose || ''}}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{$json.time_zone || ''}}",
+              "operation": "isEmpty"
+            },
+            {
+              "value1": "={{$json.required_attendees_json || ''}}",
+              "operation": "isEmpty"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf07_validation_fail",
+      "name": "IF - Validation Failure?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2840, 600]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_VALIDATION_FAILED"
+            },
+            {
+              "name": "request_status",
+              "value": "invite_validation_failed"
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_validation_failed",
+      "name": "Set - Validation Failed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3080, 520]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf07_passed_ready_for_wf08"
+            },
+            {
+              "name": "status_log_wf07_01",
+              "value": "WF-07 completed invite creation, control fields, support blocks, and validation."
+            }
+          ]
+        }
+      },
+      "id": "set_wf07_success",
+      "name": "Set - WF-07 Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3080, 680]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf07",
+      "name": "Final Output - WF-07 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [3320, 600]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-07",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-07": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Create Draft Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create Draft Event": {
+      "main": [
+        [
+          {
+            "node": "Set - Draft Event Created",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Draft Event Created": {
+      "main": [
+        [
+          {
+            "node": "Switch - Assign Event Color",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Assign Event Color": {
+      "main": [
+        [
+          {
+            "node": "Set - Color Red",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Color Purple",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Color Green",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Color Blue",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Color Pink",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Color Green",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Color Red": {
+      "main": [
+        [
+          {
+            "node": "Merge - Color Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Color Purple": {
+      "main": [
+        [
+          {
+            "node": "Merge - Color Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Color Green": {
+      "main": [
+        [
+          {
+            "node": "Merge - Color Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Color Blue": {
+      "main": [
+        [
+          {
+            "node": "Merge - Color Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Color Pink": {
+      "main": [
+        [
+          {
+            "node": "Merge - Color Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Color Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Create Travel Blocks?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Create Travel Blocks?": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Create Travel Before",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Google Calendar - Create Travel After",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Create Prep Block?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create Travel Before": {
+      "main": [
+        [
+          {
+            "node": "IF - Create Prep Block?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create Travel After": {
+      "main": [
+        [
+          {
+            "node": "IF - Create Prep Block?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Create Prep Block?": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Create Prep Block",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Reminder Privacy Recurrence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Create Prep Block": {
+      "main": [
+        [
+          {
+            "node": "Set - Reminder Privacy Recurrence",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Reminder Privacy Recurrence": {
+      "main": [
+        [
+          {
+            "node": "IF - Validation Failure?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Validation Failure?": {
+      "main": [
+        [
+          {
+            "node": "Set - Validation Failed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - WF-07 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Validation Failed": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-07 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - WF-07 Success": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-07 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "meeting_purpose": "Partner Strategy Session",
+          "event_title": "Partner Strategy Session",
+          "preferred_datetime": "2026-05-12T11:30:00-07:00",
+          "duration_minutes": 60,
+          "approved_duration_minutes": 60,
+          "agenda": "Align on joint go-to-market decision",
+          "desired_outcome": "Decision and next steps",
+          "prep_materials": "Strategy deck",
+          "location": "East Harbor Partner Office",
+          "meeting_type": "strategic",
+          "meeting_format": "in-person",
+          "audience_class": "external_or_mixed",
+          "urgency_level": "Scheduled/Normal",
+          "priority_level": "High",
+          "time_zone": "America/Los_Angeles",
+          "required_attendees_json": "[\"Executive\",\"Partner Lead\"]",
+          "travel_block_needed": true,
+          "travel_minutes_before": 45,
+          "travel_minutes_after": 45,
+          "prep_block_needed": true,
+          "prep_minutes": 30,
+          "confidentiality_level": "standard",
+          "recurrence_required": "false"
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch3-wf07-v1",
+  "meta": {},
+  "id": "WF07CalendarInviteCreationColorCoding",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-07"
+    }
+  ]
+}

@@ -1,0 +1,744 @@
+{
+  "name": "WF-09 Reschedule / Cancel / Urgent Override",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf09",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 360]
+    },
+    {
+      "parameters": {
+        "content": "WF-09 Reschedule / Cancel / Urgent Override\n\nPurpose:\nHandle material calendar changes and special cases.\n\nCoverage:\n- Rescheduling logic\n- Cancellation logic\n- Urgent override handling\n- Change management\n- Link/location/status updates\n- Downstream cleanup of travel/prep/buffer\n- Change notifications\n- Error branch",
+        "height": 300,
+        "width": 340,
+        "color": 4
+      },
+      "id": "sticky_wf09_intro",
+      "name": "Sticky Note - WF-09 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-09 Reschedule / Cancel / Urgent Override"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_start",
+      "name": "Set - Start WF-09",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 360]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.change_type || $json.request_type || ''}}",
+                    "operation": "equal",
+                    "value2": "reschedule"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "reschedule"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.change_type || $json.request_type || ''}}",
+                    "operation": "equal",
+                    "value2": "cancellation"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "cancel"
+            },
+            {
+              "conditions": {
+                "string": [
+                  {
+                    "value1": "={{$json.change_type || ''}}",
+                    "operation": "equal",
+                    "value2": "urgent_override"
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "urgent"
+            }
+          ]
+        },
+        "fallbackOutput": "change_update"
+      },
+      "id": "switch_wf09_route",
+      "name": "Switch - Change Route",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [700, 360]
+    },
+    {
+      "parameters": {
+        "content": "Rescheduling rules:\n- compare priorities\n- high-priority moves require approval\n- preserve agenda, notes, attachments, links\n- update support blocks\n- notify attendees\n- remove outdated holds\n- avoid duplicates",
+        "height": 220,
+        "width": 300,
+        "color": 6
+      },
+      "id": "sticky_wf09_reschedule",
+      "name": "Sticky Note - Reschedule Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [900, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.priority_level || ''}}",
+              "operation": "equal",
+              "value2": "High"
+            },
+            {
+              "value1": "={{$json.priority_level || ''}}",
+              "operation": "equal",
+              "value2": "Critical/Urgent"
+            }
+          ]
+        },
+        "combineOperation": "any"
+      },
+      "id": "if_wf09_reschedule_approval",
+      "name": "IF - High Priority Move Requires Approval?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [980, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.reschedule_approved === true || $json.reschedule_approved === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf09_reschedule_approved",
+      "name": "IF - Reschedule Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1220, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_HUMAN_APPROVAL_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "reschedule_approval_required"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_reschedule_hold",
+      "name": "Set - Reschedule Approval Hold",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1460, 120]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "operation": "update",
+        "eventId": "={{$json.event_id || 'EVENT_ID_PLACEHOLDER'}}",
+        "updateFields": {
+          "start": "={{$json.new_start || $json.preferred_datetime}}",
+          "end": "={{$json.new_end || $json.preferred_datetime}}"
+        }
+      },
+      "id": "google_wf09_reschedule_event",
+      "name": "Google Calendar - Reschedule Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [1460, 260],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "attendees@example.com",
+        "subject": "Meeting Reschedule Options / Update",
+        "message": "={{'We need to move this meeting due to a scheduling conflict. Updated details are attached in the invite.'}}"
+      },
+      "id": "gmail_wf09_reschedule_notice",
+      "name": "Gmail - Send Reschedule Notice",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1700, 260],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_PLACEHOLDER",
+          "name": "GMAIL_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "rescheduled"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_rescheduled",
+      "name": "Set - Rescheduled Outcome",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1940, 260]
+    },
+    {
+      "parameters": {
+        "content": "Cancellation rules:\n- notify all affected parties\n- remove linked travel/prep/buffer where appropriate\n- retain useful notes/materials\n- track rebook need",
+        "height": 180,
+        "width": 280,
+        "color": 5
+      },
+      "id": "sticky_wf09_cancel",
+      "name": "Sticky Note - Cancellation Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2060, 40]
+    },
+    {
+      "parameters": {
+        "calendar": {
+          "__rl": true,
+          "value": "primary",
+          "mode": "list",
+          "cachedResultName": "primary"
+        },
+        "operation": "delete",
+        "eventId": "={{$json.event_id || 'EVENT_ID_PLACEHOLDER'}}"
+      },
+      "id": "google_wf09_cancel_event",
+      "name": "Google Calendar - Cancel Event",
+      "type": "n8n-nodes-base.googleCalendar",
+      "typeVersion": 1.3,
+      "position": [2140, 360],
+      "credentials": {
+        "googleCalendarOAuth2Api": {
+          "id": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER",
+          "name": "GOOGLE_CALENDAR_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "send",
+        "toEmail": "attendees@example.com",
+        "subject": "Meeting Cancelled",
+        "message": "={{'This meeting has been cancelled. Please disregard the previous invite. If follow-up is needed, next steps will be coordinated separately.'}}"
+      },
+      "id": "gmail_wf09_cancel_notice",
+      "name": "Gmail - Send Cancellation Notice",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [2380, 360],
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "GMAIL_CREDENTIAL_PLACEHOLDER",
+          "name": "GMAIL_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "cancelled"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_cancelled",
+      "name": "Set - Cancelled Outcome",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2620, 360]
+    },
+    {
+      "parameters": {
+        "content": "Urgent override rules:\n- validate urgency\n- confirm executive required\n- check displaced items\n- preserve board/VIP/legal/client unless approved override\n- notify boss and affected attendees\n- document override reason",
+        "height": 220,
+        "width": 300,
+        "color": 7
+      },
+      "id": "sticky_wf09_urgent",
+      "name": "Sticky Note - Urgent Override Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [2760, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.urgency_validated === true || $json.urgency_validated === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf09_urgent_validated",
+      "name": "IF - Urgent Validated?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2860, 520]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_RECLASSIFY_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "false_urgency_or_unclear"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_urgent_reject",
+      "name": "Set - Urgent Rejected",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3100, 460]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "channel": "executive-calendar-alerts",
+        "text": "={{'A same-day urgent meeting has been added or moved due to ' + ($json.override_reason || 'validated urgency') + '. It affects ' + ($json.displaced_item || 'the current schedule') + '. Updated calendar details are below.'}}"
+      },
+      "id": "slack_wf09_urgent_notify",
+      "name": "Slack - Urgent Override Notification",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [3100, 580],
+      "credentials": {
+        "slackOAuth2Api": {
+          "id": "SLACK_CREDENTIAL_PLACEHOLDER",
+          "name": "SLACK_CREDENTIAL_PLACEHOLDER"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "urgent_override_completed"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_urgent_success",
+      "name": "Set - Urgent Override Outcome",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3340, 580]
+    },
+    {
+      "parameters": {
+        "content": "General change management for link/location/status/attendee updates.\n\nEvery material change triggers revalidation, color review, and notification updates.",
+        "height": 180,
+        "width": 280,
+        "color": 6
+      },
+      "id": "sticky_wf09_change_mgmt",
+      "name": "Sticky Note - Change Management Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3460, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS_WITH_REVALIDATION_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "material_change_requires_revalidation"
+            }
+          ]
+        }
+      },
+      "id": "set_wf09_change_update",
+      "name": "Set - Change Update Outcome",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3560, 360]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf09_final",
+      "name": "Merge - WF-09 Final",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [3820, 420]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf09",
+      "name": "Final Output - WF-09 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [4060, 420]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-09",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-09": {
+      "main": [
+        [
+          {
+            "node": "Switch - Change Route",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch - Change Route": {
+      "main": [
+        [
+          {
+            "node": "IF - High Priority Move Requires Approval?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar - Cancel Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "IF - Urgent Validated?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Change Update Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - High Priority Move Requires Approval?": {
+      "main": [
+        [
+          {
+            "node": "IF - Reschedule Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Google Calendar - Reschedule Event",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Reschedule Approved?": {
+      "main": [
+        [
+          {
+            "node": "Google Calendar - Reschedule Event",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Reschedule Approval Hold",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Reschedule Approval Hold": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-09 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Reschedule Event": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send Reschedule Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Send Reschedule Notice": {
+      "main": [
+        [
+          {
+            "node": "Set - Rescheduled Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Rescheduled Outcome": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-09 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Google Calendar - Cancel Event": {
+      "main": [
+        [
+          {
+            "node": "Gmail - Send Cancellation Notice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Gmail - Send Cancellation Notice": {
+      "main": [
+        [
+          {
+            "node": "Set - Cancelled Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Cancelled Outcome": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-09 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Urgent Validated?": {
+      "main": [
+        [
+          {
+            "node": "Slack - Urgent Override Notification",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Urgent Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgent Rejected": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-09 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack - Urgent Override Notification": {
+      "main": [
+        [
+          {
+            "node": "Set - Urgent Override Outcome",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Urgent Override Outcome": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-09 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Change Update Outcome": {
+      "main": [
+        [
+          {
+            "node": "Merge - WF-09 Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - WF-09 Final": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-09 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "change_type": "urgent_override",
+          "event_id": "EVENT_ID_PLACEHOLDER",
+          "priority_level": "Critical/Urgent",
+          "urgency_validated": true,
+          "override_reason": "Validated legal and client renewal risk",
+          "displaced_item": "Tuesday focus block"
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch4-wf09-v1",
+  "meta": {},
+  "id": "WF09RescheduleCancelUrgentOverride",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-09"
+    }
+  ]
+}

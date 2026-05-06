@@ -1,0 +1,913 @@
+{
+  "name": "WF-06 Buffer / Travel / Focus / Personal-Time Rules",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "trigger_wf06",
+      "name": "Execute Workflow Trigger",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [180, 360]
+    },
+    {
+      "parameters": {
+        "content": "WF-06 Buffer / Travel / Focus / Personal-Time Rules\n\nPurpose:\nApply focus-time protection, personal-time protection, lunch/break logic, travel-time calculation, buffer rules, and prep-time calculation.\n\nCoverage:\n- Focus-time conflict\n- Personal-time conflict\n- Lunch/break conflict\n- Travel-time calculation\n- Buffer-time calculation\n- Prep-time calculation\n- Override risk flags\n- Stop or continue status",
+        "height": 300,
+        "width": 340,
+        "color": 4
+      },
+      "id": "sticky_wf06_intro",
+      "name": "Sticky Note - WF-06 Overview",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [20, 40]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "wf_name",
+              "value": "WF-06 Buffer / Travel / Focus / Personal-Time Rules"
+            },
+            {
+              "name": "status",
+              "value": "IN_PROGRESS"
+            },
+            {
+              "name": "status_log_wf06_01",
+              "value": "WF-06 started protected-time, travel, buffer, and prep calculations."
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_start",
+      "name": "Set - Start WF-06",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [420, 360]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.focus_conflict === true || $json.focus_conflict === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_focus_conflict",
+      "name": "IF - Focus Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [720, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.priority_level || ''}}",
+              "operation": "equal",
+              "value2": "Low"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_low_priority_focus",
+      "name": "IF - Low Priority in Focus Block?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [960, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_RESCHEDULE_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "focus_protection_blocks_request"
+            },
+            {
+              "name": "focus_rule_result",
+              "value": "low_priority_cannot_displace_focus"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_focus_blocked",
+      "name": "Set - Focus Protection Blocked",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 120]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "focus_rule_result",
+              "value": "override_or_move_required"
+            },
+            {
+              "name": "status_log_wf06_02",
+              "value": "Focus conflict detected. Higher-priority or urgent exception handling may continue."
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_focus_warning",
+      "name": "Set - Focus Warning",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1200, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "focus_rule_result",
+              "value": "no_focus_conflict"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_focus_clear",
+      "name": "Set - Focus Clear",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 340]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf06_focus",
+      "name": "Merge - Focus Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [1440, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.personal_conflict === true || $json.personal_conflict === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_personal_conflict",
+      "name": "IF - Personal Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1680, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.personal_override_approved === true || $json.personal_override_approved === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_personal_approved",
+      "name": "IF - Personal Override Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1920, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_HUMAN_APPROVAL_REQUIRED"
+            },
+            {
+              "name": "request_status",
+              "value": "personal_time_conflict_requires_approval"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_personal_blocked",
+      "name": "Set - Personal Conflict Blocked",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2160, 120]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "personal_rule_result",
+              "value": "approved_override"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_personal_override",
+      "name": "Set - Personal Override Allowed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2160, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "personal_rule_result",
+              "value": "no_personal_conflict"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_personal_clear",
+      "name": "Set - Personal Clear",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [1920, 340]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf06_personal",
+      "name": "Merge - Personal Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [2400, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "boolean": [
+            {
+              "value1": "={{$json.break_conflict === true || $json.break_conflict === 'true'}}",
+              "operation": "isTrue"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_break_conflict",
+      "name": "IF - Lunch/Break Conflict?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [2640, 220]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "break_rule_result",
+              "value": "replacement_break_required_if_urgent"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_break_warning",
+      "name": "Set - Break Warning",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2880, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "break_rule_result",
+              "value": "no_break_conflict"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_break_clear",
+      "name": "Set - Break Clear",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2880, 300]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf06_break",
+      "name": "Merge - Break Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [3120, 220]
+    },
+    {
+      "parameters": {
+        "content": "Travel, buffer, and prep rules.\n\n- No in-person finalization without location\n- Add Orange travel blocks for in-person\n- Add buffer before/after based on stakes\n- Add explicit Yellow prep for strategic/VIP/board/legal/client/decision-heavy meetings",
+        "height": 240,
+        "width": 320,
+        "color": 6
+      },
+      "id": "sticky_wf06_travel_buffer_prep",
+      "name": "Sticky Note - Travel Buffer Prep Rules",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [3300, 40]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.meeting_format || ''}}",
+              "operation": "equal",
+              "value2": "in-person"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_in_person",
+      "name": "IF - In Person Meeting?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3360, 220]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{$json.location || ''}}",
+              "operation": "isEmpty"
+            }
+          ]
+        }
+      },
+      "id": "if_wf06_location_missing",
+      "name": "IF - Location Missing?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [3600, 180]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "STOP_MISSING_INFO"
+            },
+            {
+              "name": "travel_issue",
+              "value": "location_missing_for_in_person"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_location_stop",
+      "name": "Set - Stop for Missing Location",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3840, 120]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "travel_issue",
+              "value": "none"
+            }
+          ],
+          "number": [
+            {
+              "name": "travel_minutes_before",
+              "value": 45
+            },
+            {
+              "name": "travel_minutes_after",
+              "value": 45
+            }
+          ],
+          "boolean": [
+            {
+              "name": "travel_block_needed",
+              "value": true
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_travel_plan",
+      "name": "Set - Travel Plan",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3840, 260]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "travel_issue",
+              "value": "no_travel_needed"
+            }
+          ],
+          "number": [
+            {
+              "name": "travel_minutes_before",
+              "value": 0
+            },
+            {
+              "name": "travel_minutes_after",
+              "value": 0
+            }
+          ],
+          "boolean": [
+            {
+              "name": "travel_block_needed",
+              "value": false
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_no_travel",
+      "name": "Set - No Travel Needed",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [3600, 320]
+    },
+    {
+      "parameters": {
+        "mode": "append"
+      },
+      "id": "merge_wf06_travel",
+      "name": "Merge - Travel Result",
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [4080, 220]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "number": [
+            {
+              "name": "buffer_minutes_before",
+              "value": "={{$json.priority_level === 'High' || $json.priority_level === 'Critical/Urgent' ? 15 : 5}}"
+            },
+            {
+              "name": "buffer_minutes_after",
+              "value": "={{$json.priority_level === 'High' || $json.priority_level === 'Critical/Urgent' ? 15 : 5}}"
+            },
+            {
+              "name": "prep_minutes",
+              "value": "={{($json.priority_level === 'High' || $json.priority_level === 'Critical/Urgent' || $json.meeting_type === 'board' || $json.meeting_type === 'investor' || $json.meeting_type === 'strategic') ? 30 : 0}}"
+            }
+          ],
+          "boolean": [
+            {
+              "name": "prep_block_needed",
+              "value": "={{($json.priority_level === 'High' || $json.priority_level === 'Critical/Urgent' || $json.meeting_type === 'board' || $json.meeting_type === 'investor' || $json.meeting_type === 'strategic')}}"
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_buffer_prep",
+      "name": "Set - Buffer and Prep Plan",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4320, 220]
+    },
+    {
+      "parameters": {
+        "keepOnlySet": false,
+        "values": {
+          "string": [
+            {
+              "name": "status",
+              "value": "SUCCESS"
+            },
+            {
+              "name": "request_status",
+              "value": "wf06_passed_ready_for_wf07"
+            },
+            {
+              "name": "status_log_wf06_03",
+              "value": "WF-06 completed protection, travel, buffer, and prep planning."
+            }
+          ]
+        }
+      },
+      "id": "set_wf06_success",
+      "name": "Set - WF-06 Success",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [4560, 220]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{$json}}"
+      },
+      "id": "respond_wf06",
+      "name": "Final Output - WF-06 Structured Response",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [4800, 220]
+    }
+  ],
+  "connections": {
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Set - Start WF-06",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Start WF-06": {
+      "main": [
+        [
+          {
+            "node": "IF - Focus Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Focus Conflict?": {
+      "main": [
+        [
+          {
+            "node": "IF - Low Priority in Focus Block?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Focus Clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Low Priority in Focus Block?": {
+      "main": [
+        [
+          {
+            "node": "Set - Focus Protection Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Focus Warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Focus Protection Blocked": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-06 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Focus Warning": {
+      "main": [
+        [
+          {
+            "node": "Merge - Focus Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Focus Clear": {
+      "main": [
+        [
+          {
+            "node": "Merge - Focus Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Focus Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Personal Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Personal Conflict?": {
+      "main": [
+        [
+          {
+            "node": "IF - Personal Override Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Personal Clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Personal Override Approved?": {
+      "main": [
+        [
+          {
+            "node": "Set - Personal Override Allowed",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Personal Conflict Blocked",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Personal Conflict Blocked": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-06 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Personal Override Allowed": {
+      "main": [
+        [
+          {
+            "node": "Merge - Personal Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Personal Clear": {
+      "main": [
+        [
+          {
+            "node": "Merge - Personal Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Personal Result": {
+      "main": [
+        [
+          {
+            "node": "IF - Lunch/Break Conflict?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Lunch/Break Conflict?": {
+      "main": [
+        [
+          {
+            "node": "Set - Break Warning",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Break Clear",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Break Warning": {
+      "main": [
+        [
+          {
+            "node": "Merge - Break Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Break Clear": {
+      "main": [
+        [
+          {
+            "node": "Merge - Break Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Break Result": {
+      "main": [
+        [
+          {
+            "node": "IF - In Person Meeting?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - In Person Meeting?": {
+      "main": [
+        [
+          {
+            "node": "IF - Location Missing?",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - No Travel Needed",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "IF - Location Missing?": {
+      "main": [
+        [
+          {
+            "node": "Set - Stop for Missing Location",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Set - Travel Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Stop for Missing Location": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-06 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Travel Plan": {
+      "main": [
+        [
+          {
+            "node": "Merge - Travel Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - No Travel Needed": {
+      "main": [
+        [
+          {
+            "node": "Merge - Travel Result",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge - Travel Result": {
+      "main": [
+        [
+          {
+            "node": "Set - Buffer and Prep Plan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - Buffer and Prep Plan": {
+      "main": [
+        [
+          {
+            "node": "Set - WF-06 Success",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Set - WF-06 Success": {
+      "main": [
+        [
+          {
+            "node": "Final Output - WF-06 Structured Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "priority_level": "High",
+          "meeting_type": "strategic",
+          "meeting_format": "in-person",
+          "location": "East Harbor Partner Office",
+          "focus_conflict": false,
+          "personal_conflict": false,
+          "break_conflict": false,
+          "personal_override_approved": false
+        }
+      }
+    ]
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "batch3-wf06-v1",
+  "meta": {},
+  "id": "WF06BufferTravelFocusPersonalTimeRules",
+  "tags": [
+    {
+      "name": "executive-calendar"
+    },
+    {
+      "name": "wf-06"
+    }
+  ]
+}
